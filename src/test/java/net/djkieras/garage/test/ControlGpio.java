@@ -2,6 +2,7 @@ package net.djkieras.garage.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ import net.djkieras.garage.component.GpioManager;
 
 public class ControlGpio {
 
-	private GpioManager mgr = new GpioManager(new RaspiPin());
+	private GpioManager mgr = new GpioManager();
 	
 	@BeforeAll
 	public static void setUp() {
@@ -27,23 +28,24 @@ public class ControlGpio {
 	
 	@AfterEach
 	public void tearDown() {
-		mgr.clearPinProvisions();
+		mgr.deregisterAllPins();
+		mgr.shutdownGpioController();
 	}
 	
 	@Test
 	public void testGpio1() throws Exception {
-		final GpioPinDigitalOutput pin = mgr.initializePin("GPIO 1", "MyLED", PinState.HIGH, PinState.LOW);
-		assertEquals(PinState.HIGH, pin.getState());
-		pin.toggle();
+		final GpioPinDigitalOutput pin = mgr.registerPinDefaultOff("GPIO 1", "MyLED");
 		assertEquals(PinState.LOW, pin.getState());
+		pin.toggle();
+		assertEquals(PinState.HIGH, pin.getState());
 	}
 	
 	@Test
 	public void testGpio1_1() throws Exception {
-		final GpioPinDigitalOutput pin = mgr.initializePin(1, "MyLED", PinState.HIGH, PinState.LOW);
-		assertEquals(PinState.HIGH, pin.getState());
-		pin.toggle();
+		final GpioPinDigitalOutput pin = mgr.registerPinDefaultOff(1, "MyLED");
 		assertEquals(PinState.LOW, pin.getState());
+		pin.toggle();
+		assertEquals(PinState.HIGH, pin.getState());
 	}
 	
 	//@Test
@@ -97,4 +99,3 @@ public class ControlGpio {
 		System.out.println("Exiting ControlGpioExample");
 	}
 }
-;;

@@ -8,22 +8,24 @@ import com.pi4j.io.gpio.Pin;
 import com.pi4j.io.gpio.PinProvider;
 import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
-import com.pi4j.platform.Platform;
 
+@SuppressWarnings("static-access")
 public class GpioManager {
 
-	private static final GpioController GPIO_CONTROLLER = GpioFactory.getInstance();
-	
 	private PinProvider pinProvider;
 	// TODO inject pin provider
 	//public static PinProvider PIN_PROVIDER = new RaspiPin();
 
 	public GpioManager() {
-		
+		this.pinProvider = new RaspiPin();
 	}
 	
 	public GpioManager(PinProvider pinProvider) {
 		this.pinProvider = pinProvider;
+	}
+	
+	private GpioController getGpioController() {
+		return GpioFactory.getInstance();
 	}
 	
 	public void setPinProvider(PinProvider pinProvider) {
@@ -34,80 +36,81 @@ public class GpioManager {
 		return this.pinProvider;
 	}
 	
-	public GpioPinDigitalOutput initializePin(int pinAddress, String pinOutputName, PinState defaultPinState,
-			PinState pinShutdownState) {
+	public GpioPin getPin(int pinAddress) {
+		return getGpioController().getProvisionedPin(getPinProvider().getPinByAddress(pinAddress));
+	}
+	
+	public GpioPin getPin(Pin pin) {
+		return getGpioController().getProvisionedPin(pin);
+	}
+	
+	public GpioPin getPin(String pinName) {
+		return getGpioController().getProvisionedPin(pinName);
+	}
+	
+	public GpioPinDigitalOutput registerPinDefaultOff(int pinAddress, String pinOutputName) {
 		Pin pin = getPinProvider().getPinByAddress(pinAddress);
-		return initializePin(pin, pinOutputName, defaultPinState, pinShutdownState);
+		return registerPin(pin, pinOutputName, PinState.LOW, PinState.LOW);
 	}
 
-	public GpioPinDigitalOutput initializePin(String pinName, String pinOutputName, PinState defaultPinState,
-			PinState pinShutdownState) {
+	public GpioPinDigitalOutput registerPinDefaultOff(String pinName, String pinOutputName) {
 		Pin pin = getPinProvider().getPinByName(pinName);
-		return initializePin(pin, pinOutputName, defaultPinState, pinShutdownState);
+		return registerPin(pin, pinOutputName, PinState.LOW, PinState.LOW);
 	}
 
-	public GpioPinDigitalOutput initializePin(Pin pin, String pinOutputName, PinState defaultPinState,
+	public GpioPinDigitalOutput registerPinDefaultOn(int pinAddress, String pinOutputName) {
+		Pin pin = getPinProvider().getPinByAddress(pinAddress);
+		return registerPin(pin, pinOutputName, PinState.HIGH, PinState.LOW);
+	}
+
+	public GpioPinDigitalOutput registerPinDefaultOn(String pinName, String pinOutputName) {
+		Pin pin = getPinProvider().getPinByName(pinName);
+		return registerPin(pin, pinOutputName, PinState.HIGH, PinState.LOW);
+	}
+	
+	public GpioPinDigitalOutput registerPin(Pin pin, String pinOutputName, PinState defaultPinState,
 			PinState pinShutdownState) {
-		final GpioPinDigitalOutput pinOutput = GPIO_CONTROLLER.provisionDigitalOutputPin(pin, pinOutputName,
+		final GpioPinDigitalOutput pinOutput = getGpioController().provisionDigitalOutputPin(pin, pinOutputName,
 				defaultPinState);
 		pinOutput.setShutdownOptions(true, pinShutdownState);
 		return pinOutput;
 	}
-
-	public void clearPinProvisions() {
-		if (GPIO_CONTROLLER.getProvisionedPins() != null && GPIO_CONTROLLER.getProvisionedPins().size() > 0) {
-			GPIO_CONTROLLER.unprovisionPin(GPIO_CONTROLLER.getProvisionedPins()
-					.toArray(new GpioPin[GPIO_CONTROLLER.getProvisionedPins().size()]));
+	
+	public void deregisterPin(String pinName) {
+		deregisterPin(getPin(pinName));
+	}
+	
+	public void deregisterPin(int pinAddress) {
+		deregisterPin(getPin(pinAddress));
+	}
+	
+	public void deregisterPin(Pin pin) {
+		deregisterPin(getPin(pin));
+	}
+	
+	public void deregisterPin(GpioPin pin) {
+		getGpioController().unprovisionPin(pin);
+	}
+	
+	public void deregisterAllPins() {
+		if (getGpioController().getProvisionedPins() != null && getGpioController().getProvisionedPins().size() > 0) {
+			getGpioController().unprovisionPin(getGpioController().getProvisionedPins()
+					.toArray(new GpioPin[getGpioController().getProvisionedPins().size()]));
 		}
 	}
-
-	public void test() throws Exception {
-		System.out.println("<--Pi4J--> GPIO Control Example ... started.");
-
-		System.setProperty("pi4j.platform", Platform.SIMULATED.getId());
-
-		// create gpio controller
-		final GpioController gpio = GpioFactory.getInstance();
-
-		// provision gpio pin #01 as an output pin and turn on
-		final GpioPinDigitalOutput pin = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_01, "MyLED", PinState.HIGH);
-
-		// set shutdown state for this pin
-		pin.setShutdownOptions(true, PinState.LOW);
-
-		System.out.println("--> GPIO state should be: ON");
-
-		Thread.sleep(5000);
-
-		// turn off gpio pin #01
-		pin.low();
-		System.out.println("--> GPIO state should be: OFF");
-
-		Thread.sleep(5000);
-
-		// toggle the current state of gpio pin #01 (should turn on)
-		pin.toggle();
-		System.out.println("--> GPIO state should be: ON");
-
-		Thread.sleep(5000);
-
-		// toggle the current state of gpio pin #01 (should turn off)
-		pin.toggle();
-		System.out.println("--> GPIO state should be: OFF");
-
-		Thread.sleep(5000);
-
-		// turn on gpio pin #01 for 1 second and then off
-		System.out.println("--> GPIO state should be: ON for only 1 second");
-		pin.pulse(1000, true); // set second argument to 'true' use a blocking
-								// call
-
-		// stop all GPIO activity/threads by shutting down the GPIO controller
-		// (this method will forcefully shutdown all GPIO monitoring threads and
-		// scheduled tasks)
-		gpio.shutdown();
-
-		System.out.println("Exiting ControlGpioExample");
+	
+	public void momentaryPinActivation(GpioPinDigitalOutput pin, int milliseconds) {
+		pin.pulse(milliseconds, true);
 	}
-
-};;
+	
+	public void shutdownGpioController() {
+		if (! getGpioController().isShutdown()) {
+			getGpioController().shutdown();
+		}
+	}
+	
+	public void finalize() {
+		shutdownGpioController();
+	}
+	
+}
