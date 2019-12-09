@@ -17,7 +17,7 @@ import net.djkieras.garage.component.GpioManager;
 
 public class ControlGpio {
 
-	private GpioManager mgr = new GpioManager();
+	private GpioManager mgr = new GpioManager(new RaspiPin());
 	
 	@BeforeAll
 	public static void setUp() {

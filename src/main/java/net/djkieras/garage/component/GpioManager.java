@@ -13,18 +13,36 @@ import com.pi4j.platform.Platform;
 public class GpioManager {
 
 	private static final GpioController GPIO_CONTROLLER = GpioFactory.getInstance();
+	
+	private PinProvider pinProvider;
 	// TODO inject pin provider
-	public static PinProvider PIN_PROVIDER = new RaspiPin();
+	//public static PinProvider PIN_PROVIDER = new RaspiPin();
 
+	public GpioManager() {
+		
+	}
+	
+	public GpioManager(PinProvider pinProvider) {
+		this.pinProvider = pinProvider;
+	}
+	
+	public void setPinProvider(PinProvider pinProvider) {
+		this.pinProvider = pinProvider;
+	}
+	
+	public PinProvider getPinProvider() {
+		return this.pinProvider;
+	}
+	
 	public GpioPinDigitalOutput initializePin(int pinAddress, String pinOutputName, PinState defaultPinState,
 			PinState pinShutdownState) {
-		Pin pin = PIN_PROVIDER.getPinByAddress(pinAddress);
+		Pin pin = getPinProvider().getPinByAddress(pinAddress);
 		return initializePin(pin, pinOutputName, defaultPinState, pinShutdownState);
 	}
 
 	public GpioPinDigitalOutput initializePin(String pinName, String pinOutputName, PinState defaultPinState,
 			PinState pinShutdownState) {
-		Pin pin = PIN_PROVIDER.getPinByName(pinName);
+		Pin pin = getPinProvider().getPinByName(pinName);
 		return initializePin(pin, pinOutputName, defaultPinState, pinShutdownState);
 	}
 
