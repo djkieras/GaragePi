@@ -1,40 +1,54 @@
-package net.djkieras.pigarage.component;
+package net.djkieras.garage.test;
 
-import java.util.Collection;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.pi4j.io.gpio.GpioController;
 import com.pi4j.io.gpio.GpioFactory;
-import com.pi4j.io.gpio.GpioPin;
 import com.pi4j.io.gpio.GpioPinDigitalOutput;
-import com.pi4j.io.gpio.Pin;
-import com.pi4j.io.gpio.PinProvider;
 import com.pi4j.io.gpio.PinState;
 import com.pi4j.io.gpio.RaspiPin;
 import com.pi4j.platform.Platform;
 
-public class GpioManager {
+import net.djkieras.garage.component.GpioManager;
 
-	private static final GpioController GPIO_CONTROLLER = GpioFactory.getInstance();
-	//TODO inject pin provider
-	public static PinProvider PIN_PROVIDER = new RaspiPin();
+public class ControlGpio {
+
+	private GpioManager mgr = new GpioManager();
 	
-	public GpioPinDigitalOutput initializePin(int pinAddress, String pinOutputName, PinState defaultPinState, PinState pinShutdownState) {
-		Pin pin = PIN_PROVIDER.getPinByAddress(pinAddress);
-		return initializePin(pin, pinOutputName, defaultPinState, pinShutdownState);
+	@BeforeAll
+	public static void setUp() {
+		System.setProperty("pi4j.platform", Platform.SIMULATED.getId());
+		
 	}
 	
-	public GpioPinDigitalOutput initializePin(String pinName, String pinOutputName, PinState defaultPinState, PinState pinShutdownState) {
-		Pin pin = PIN_PROVIDER.getPinByName(pinName);
-		return initializePin(pin, pinOutputName, defaultPinState, pinShutdownState);
+	@AfterEach
+	public void tearDown() {
+		mgr.clearPinProvisions();
 	}
 	
-	public GpioPinDigitalOutput initializePin(Pin pin, String pinOutputName, PinState defaultPinState, PinState pinShutdownState) {
-		final GpioPinDigitalOutput pinOutput = GPIO_CONTROLLER.provisionDigitalOutputPin(pin, pinOutputName, defaultPinState);
-		pinOutput.setShutdownOptions(true, pinShutdownState);
-		return pinOutput;
+	@Test
+	public void testGpio1() throws Exception {
+		final GpioPinDigitalOutput pin = mgr.initializePin("GPIO 1", "MyLED", PinState.HIGH, PinState.LOW);
+		assertEquals(PinState.HIGH, pin.getState());
+		pin.toggle();
+		assertEquals(PinState.LOW, pin.getState());
 	}
 	
-	public void test() throws Exception {
+	@Test
+	public void testGpio1_1() throws Exception {
+		final GpioPinDigitalOutput pin = mgr.initializePin(1, "MyLED", PinState.HIGH, PinState.LOW);
+		assertEquals(PinState.HIGH, pin.getState());
+		pin.toggle();
+		assertEquals(PinState.LOW, pin.getState());
+	}
+	
+	//@Test
+	public void testGpio() throws Exception {
+
 		System.out.println("<--Pi4J--> GPIO Control Example ... started.");
 
 		System.setProperty("pi4j.platform", Platform.SIMULATED.getId());
@@ -82,6 +96,5 @@ public class GpioManager {
 
 		System.out.println("Exiting ControlGpioExample");
 	}
-	
 }
 ;;
